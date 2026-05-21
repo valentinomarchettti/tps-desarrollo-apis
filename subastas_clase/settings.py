@@ -10,10 +10,39 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def load_dotenv_file(dotenv_path):
+    if not dotenv_path.exists():
+        return
+
+    try:
+        with dotenv_path.open('r', encoding='utf-8') as dotenv_file:
+            for line in dotenv_file:
+                stripped_line = line.strip()
+                if not stripped_line or stripped_line.startswith('#') or '=' not in stripped_line:
+                    continue
+
+                key, value = stripped_line.split('=', 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                os.environ.setdefault(key, value)
+    except OSError:
+        return
+
+
+load_dotenv_file(BASE_DIR / '.env')
+
+EXCHANGERATE_API_KEY = os.getenv('EXCHANGERATE_API_KEY', '')
+EXCHANGERATE_BASE_URL = os.getenv('EXCHANGERATE_BASE_URL', 'https://v6.exchangerate-api.com/v6')
+EXCHANGERATE_SOURCE_CURRENCY = os.getenv('EXCHANGERATE_SOURCE_CURRENCY', 'ARS')
+EXCHANGERATE_TARGET_CURRENCY = os.getenv('EXCHANGERATE_TARGET_CURRENCY', 'USD')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -152,4 +181,5 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'ALGORITHM': 'HS256',
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
 }
