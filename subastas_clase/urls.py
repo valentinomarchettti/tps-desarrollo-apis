@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
     path('api/v1/', include('apps.anuncio.api.urls')),
+    path('usuarios/', include('apps.core.urls')),
 ]
