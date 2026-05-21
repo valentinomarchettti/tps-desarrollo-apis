@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.relations import PrimaryKeyRelatedField
+from decimal import Decimal, ROUND_HALF_UP
 
 from ..models import Anuncio, Categoria, OfertaAnuncio
 
@@ -13,6 +14,8 @@ class CategoriaSerializer(serializers.ModelSerializer):
 
 class AnuncioSerializer(serializers.ModelSerializer):
     categorias = CategoriaSerializer(many=True, read_only=True)
+    precio_inicial_convertido = serializers.SerializerMethodField()
+    moneda_convertida = serializers.SerializerMethodField()
     categorias_ids = PrimaryKeyRelatedField(
         queryset=Categoria.objects.all(),
         many=True,
@@ -27,6 +30,8 @@ class AnuncioSerializer(serializers.ModelSerializer):
             'titulo',
             'descripcion',
             'precio_inicial',
+            'precio_inicial_convertido',
+            'moneda_convertida',
             'imagen',
             'fecha_inicio',
             'fecha_fin',
@@ -78,6 +83,23 @@ class AnuncioSerializer(serializers.ModelSerializer):
         if categorias is not None:
             anuncio.categorias.set(categorias)
         return anuncio
+
+    def get_precio_inicial_convertido(self, obj):
+        exchange_rate = self.context.get('exchange_rate')
+        if exchange_rate is None:
+            return None
+
+        try:
+            rate = Decimal(str(exchange_rate))
+            converted = (obj.precio_inicial * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            return converted
+        except Exception:
+            return None
+
+    def get_moneda_convertida(self, obj):
+        if self.context.get('exchange_rate') is None:
+            return None
+        return self.context.get('target_currency')
 
 
 class OfertaAnuncioSerializer(serializers.ModelSerializer):
